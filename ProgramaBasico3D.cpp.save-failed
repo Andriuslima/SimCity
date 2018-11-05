@@ -16,7 +16,8 @@
 #include <fstream>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string>
+#include<string>
+using std::string;
 
 using namespace std;
 
@@ -57,12 +58,12 @@ void readColors(){
     inFile.close();
 }
 
-void readObjects(*char[20] NomeArquivo){
+void readObjects(string NomeArquivo){
 
     //Example
     Quadrilateral cubo01;
 
-    inFile.open(*NomeArquivo);
+    inFile.open(NomeArquivo);
     if(!inFile){
         cout << "Não consegui abrir o arquivo do predio01" << endl;
         exit(1);
@@ -168,7 +169,7 @@ void init(void)
     #endif
 
     readColors();
-    char modelo01[20] = "objects/predio01.txt";
+    string modelo01 = "objects/predio01.txt";
     readObjects(&modelo01);
 
 }

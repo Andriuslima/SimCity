@@ -16,31 +16,34 @@
 #include <fstream>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string>
 
 using namespace std;
+GLfloat AspectRatio;
 
 int NUM_COLORS;
+int NUM_OBJS = 0;
+int MAX_X = 5;
+int MAX_Z = 5;
+int colors[10][3];
+
 ifstream inFile;
 int x;
 
 typedef struct{
     float altura, largura, profundidade;
     int color;
+    float posX, posZ;
 }Quadrilateral;
 
-int colors[10][3];
 Quadrilateral quads[10];
 
-GLfloat AspectRatio, AngY=0;
-
-void readColors(){
-    inFile.open("objects/colors.txt");
+void readColors(char fileName[50]){
+    inFile.open(fileName);
     if(!inFile){
-        cout << "Não consegui abrir o arquivo das cores";
+        cout << "Não consegui abrir o arquivo " << fileName << endl;
         exit(1);
     }else{
-        cout << "Arquivos das cores aberto" << endl;
+        cout << "Arquivo "<< fileName <<" aberto" << endl;
     }
 
     while(inFile >> x){
@@ -53,40 +56,37 @@ void readColors(){
             colors[i][2] = b;
         }
     }
-
     inFile.close();
 }
 
-void readObjects(*char[20] NomeArquivo){
+void readObjects(char fileName[50]){
+    Quadrilateral obj;
 
-    //Example
-    Quadrilateral cubo01;
-
-    inFile.open(*NomeArquivo);
+    inFile.open(fileName);
     if(!inFile){
-        cout << "Não consegui abrir o arquivo do predio01" << endl;
+        cout << "Não consegui abrir o arquivo " << fileName << endl;
         exit(1);
     }else{
-        cout << "Arquivo do predio01 aberto" << endl;
+        cout << "Arquivo "<< fileName <<" aberto" << endl;
     }
-    inFile >> cubo01.largura >> cubo01.altura >> cubo01.profundidade;
-    inFile >> cubo01.color;
 
-    quads[0] = cubo01;
+    inFile >> obj.largura >> obj.altura >> obj.profundidade;
+    inFile >> obj.color;
+
+    obj.posX = (rand() % MAX_X) + obj.largura/2;
+    obj.posZ = (rand() % MAX_Z) + obj.profundidade/2;
+    cout << "Coordenadas: X = " << obj.posX  << ", Y = " << obj.posZ << endl;
+
+    quads[NUM_OBJS++] = obj;
     inFile.close();
 
-    cout << "Cubo 01" << endl;
-    cout << cubo01.largura << "|" << cubo01.altura << "|" << cubo01.profundidade << endl;
-    cout << cubo01.color << endl;
-    cout << colors[quads[0].color-1][0] << "|" << colors[quads[0].color-1][1] << "|" << colors[quads[0].color-1][2] << endl;
-    cout << *colors << endl;
+    //cout << cubo01.largura << "|" << cubo01.altura << "|" << cubo01.profundidade << endl;
+    //cout << cubo01.color << endl;
+    //cout << colors[quads[0].color-1][0] << "|" << colors[quads[0].color-1][1] << "|" << colors[quads[0].color-1][2] << endl;
+    //cout << *colors << endl;
 }
 
-// **********************************************************************
-//  void DefineLuz(void)
-// **********************************************************************
-void DefineLuz(void)
-{
+void DefineLuz(void){
   // Define cores para um objeto dourado
   GLfloat LuzAmbiente[]   = {0.24725f, 0.1995f, 0.07f } ;
   GLfloat LuzDifusa[]   = {0.75164f, 0.60648f, 0.22648f, 1.0f };
@@ -146,14 +146,8 @@ void DefineLuz(void)
 
 }
 
-
-// **********************************************************************
-//  void init(void)
-//	Inicializa os parâmetros globais de OpenGL
-// **********************************************************************
-void init(void)
-{
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Fundo de tela preto
+void init(void){
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	glShadeModel(GL_SMOOTH);
 	glColorMaterial (GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
@@ -167,18 +161,12 @@ void init(void)
         gettimeofday (&last_idle_time, NULL);
     #endif
 
-    readColors();
-    char modelo01[20] = "objects/predio01.txt";
-    readObjects(&modelo01);
-
+    readColors("objects/colors.txt");
+    readObjects("objects/modelo01.txt");
+    readObjects("objects/modelo02.txt");
 }
 
-
-// **********************************************************************
-//  void PosicUser()
-// **********************************************************************
-void PosicUser()
-{
+void PosicUser(){
 	// Set the clipping volume
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -191,13 +179,7 @@ void PosicUser()
 			  0.0f,1.0f,0.0f);
 }
 
-
-// **********************************************************************
-//  void reshape( int w, int h )
-//  trata o redimensionamento da janela OpenGL
-// **********************************************************************
-void reshape( int w, int h )
-{
+void reshape( int w, int h ){
 
 	// Prevent a divide by zero, when window is too short
 	// (you cant make a window of zero width).
@@ -215,11 +197,7 @@ void reshape( int w, int h )
 
 }
 
-// **********************************************************************
-//  void DesenhaCubo()
-// **********************************************************************
-void DesenhaCubo(float x, float y, float z)
-{
+void DrawObject(float x, float y, float z){
 	glBegin ( GL_QUADS );
         // Front Face
         glNormal3f(0,0,1);
@@ -260,11 +238,22 @@ void DesenhaCubo(float x, float y, float z)
 	glEnd();
 }
 
-// **********************************************************************
-//  void display( void )
-// **********************************************************************
-void display( void )
-{
+void DisplayObjects(){
+    for(int i = 0; i < NUM_OBJS; i++){
+        Quadrilateral object = quads[i];
+        int color = object.color;
+        float x = object.posX;
+        float z = object.posZ;
+
+        glPushMatrix();
+            glTranslatef(x, 0.0f, -z);
+            glColor3f(colors[color-1][0],colors[color-1][1],colors[color-1][2]);
+            DrawObject(object.largura, object.altura, object.profundidade);
+        glPopMatrix();
+    }
+}
+
+void display( void ){
 
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
@@ -274,34 +263,12 @@ void display( void )
 
 	glMatrixMode(GL_MODELVIEW);
 
-
-	glPushMatrix();
-		glTranslatef ( 1.0f, 0.0f, -5.0f );
-        glRotatef(AngY,0,1,0);
-        int color = quads[0].color;
-		glColor3f(colors[color-1][0],colors[color-1][1],colors[color-1][2]);
-		DesenhaCubo(quads[0].largura, quads[0].altura, quads[0].profundidade);
-	glPopMatrix();
-
-
-	glPushMatrix();
-		glTranslatef ( -1.0f, 2.0f, -8.0f );
-		glRotatef(AngY,0,1,0);
-		glColor3f(0.5f,0.3f,0.0f);
-		DesenhaCubo(quads[0].largura, quads[0].altura, quads[0].profundidade);
-	glPopMatrix();
-
+	DisplayObjects();
 
 	glutSwapBuffers();
 }
 
-// **********************************************************************
-//  void animate ( unsigned char key, int x, int y )
-//
-//
-// **********************************************************************
-void animate()
-{
+void animate(){
     static float dt;
     static float AccumTime=0;
 
@@ -335,35 +302,19 @@ void animate()
     glutPostRedisplay();
 }
 
-// **********************************************************************
-//  void keyboard ( unsigned char key, int x, int y )
-//
-//
-// **********************************************************************
-void keyboard ( unsigned char key, int x, int y )
-{
+void keyboard ( unsigned char key, int x, int y ){
 	switch ( key )
 	{
     case 27:        // Termina o programa qdo
       exit ( 0 );   // a tecla ESC for pressionada
       break;
-    case ' ':
-        ++AngY;
-        glutPostRedisplay();
-
     default:
             cout << key;
       break;
   }
 }
 
-// **********************************************************************
-//  void arrow_keys ( int a_keys, int x, int y )
-//
-//
-// **********************************************************************
-void arrow_keys ( int a_keys, int x, int y )
-{
+void arrow_keys ( int a_keys, int x, int y ){
 	switch ( a_keys )
 	{
 		case GLUT_KEY_UP:       // When Up Arrow Is Pressed...
@@ -377,13 +328,7 @@ void arrow_keys ( int a_keys, int x, int y )
 	}
 }
 
-// **********************************************************************
-//  void main ( int argc, char** argv )
-//
-//
-// **********************************************************************
-int main ( int argc, char** argv )
-{
+int main ( int argc, char** argv ){
 	glutInit            ( &argc, argv );
 	glutInitDisplayMode (GLUT_DOUBLE | GLUT_DEPTH | GLUT_RGB );// | GLUT_STEREO);// | GLUT_DOUBLE | GLUT_RGBA );
 	//glutInitDisplayMode (GLUT_RGB | GLUT_DEPTH | GLUT_STEREO);// | GLUT_DOUBLE | GLUT_RGBA );
