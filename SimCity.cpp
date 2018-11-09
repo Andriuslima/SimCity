@@ -1,3 +1,12 @@
+// NAVEGCAO
+//   W
+// A S D  -> Move a visao
+//
+// SETAS -> Movem o jogador
+//
+// 8 -> PARA CIMA
+// 2 -> PARA BAIXO
+
 #ifdef WIN32
 #include <windows.h>
 #include "gl\glut.h"
@@ -25,7 +34,7 @@ int WINDOW_HEIGHT = 800;
 int NUM_COLORS;
 int colors[10][3];
 
-int JUMP = 2;
+int JUMP = 1;
 float userX = 0;
 float userY = 0;
 float userZ = 0;
@@ -36,8 +45,8 @@ float lookZ = -8;
 int CITY_MAXWIDTH = 100;
 int CITY_MAXDEPTH = 100;
 
-int OBJ_WIDTH = 10;
-int OBJ_DEPTH = 10;
+int OBJ_WIDTH = 5;
+int OBJ_DEPTH = 5;
 
 ifstream inFile;
 int x;
@@ -197,11 +206,18 @@ void DrawCity(City c){
         for(int j = 0; j < c.depth; j++){
             int objHeight = c.form[i][j];
 
-            glPushMatrix();
-                glColor3f(255.0, 0.0, 0.0);
-                glTranslatef((float)(i + 10), (float)(objHeight/2) ,(float)(j + 10));
-                DrawObject(OBJ_WIDTH, c.form[i][j], OBJ_DEPTH);
-            glPopMatrix();
+            if( objHeight > 0){
+                if(j%2 == 0){
+                    glColor3f(255.0, 0.0, 0.0);
+                } else {
+                    glColor3f(0.0, 0.0, 255.0);
+                }
+
+                glPushMatrix();
+                    glTranslatef((float)(-i*(2*OBJ_WIDTH) + 3), objHeight,(float)(-j*(2*OBJ_DEPTH) + 3));
+                    DrawObject(OBJ_WIDTH, objHeight, OBJ_DEPTH);
+                glPopMatrix();
+            }
         }
     }
 }
@@ -249,6 +265,28 @@ void display( void ){
 
 	DrawCity(simCity);
 
+	//int objHeight;
+	//glPushMatrix();
+    //    objHeight = 10;
+    //    glColor3f(0.0, 0.0, 255.0);
+    //    glTranslatef(0*OBJ_WIDTH, (float)(objHeight), 0*(2*OBJ_DEPTH));
+    //    DrawObject(OBJ_WIDTH, objHeight, OBJ_DEPTH);
+    //glPopMatrix();
+
+	//glPushMatrix();
+    //   objHeight = 20;
+    //    glColor3f(0.0, 255.0, 0.0);
+    //    glTranslatef(0*OBJ_WIDTH, (float)(objHeight), 1*(2*OBJ_DEPTH));
+    //    DrawObject(OBJ_WIDTH, objHeight, OBJ_DEPTH);
+    //glPopMatrix();
+
+    //glPushMatrix();
+    //    objHeight = 30;
+    //    glColor3f(255.0, 0.0, 0.0);
+    //    glTranslatef(0*OBJ_WIDTH, (float)(objHeight), 2*(2*OBJ_DEPTH));
+    //   DrawObject(OBJ_WIDTH, objHeight, OBJ_DEPTH);
+    //glPopMatrix();
+
 	glutSwapBuffers();
 }
 
@@ -284,12 +322,30 @@ void keyboard ( unsigned char key, int x, int y ){
     case 27:
         exit(0);
         break;
-    case ' ':
-        userY -= JUMP;
+    case 'd':
+        lookX += JUMP;
         glutPostRedisplay();
         break;
-    case 'b':
+    case 'a':
+        lookX -= JUMP;
+        glutPostRedisplay();
+        break;
+    case 's':
+        lookY -= JUMP;
+        glutPostRedisplay();
+        break;
+    case 'w':
+        lookY += JUMP;
+        glutPostRedisplay();
+        break;
+    case '8':
+        lookY += JUMP;
         userY += JUMP;
+        glutPostRedisplay();
+        break;
+    case '2':
+        lookY -= JUMP;
+        userY -= JUMP;
         glutPostRedisplay();
         break;
     default:
