@@ -1,4 +1,3 @@
-
 #ifdef WIN32
 #include <windows.h>
 #include "gl\glut.h"
@@ -20,22 +19,35 @@
 using namespace std;
 GLfloat AspectRatio;
 
+int WINDOW_WIDTH = 1200;
+int WINDOW_HEIGHT = 800;
+
 int NUM_COLORS;
-int NUM_OBJS = 0;
-int MAX_X = 5;
-int MAX_Z = 5;
 int colors[10][3];
+
+int JUMP = 2;
+float userX = 0;
+float userY = 0;
+float userZ = 0;
+float lookX = 0;
+float lookY = 0;
+float lookZ = -8;
+
+int CITY_MAXWIDTH = 100;
+int CITY_MAXDEPTH = 100;
+
+int OBJ_WIDTH = 10;
+int OBJ_DEPTH = 10;
 
 ifstream inFile;
 int x;
 
 typedef struct{
-    float altura, largura, profundidade;
-    int color;
-    float posX, posZ;
-}Quadrilateral;
+    int width, depth;
+    int form[100][100];
+}City;
 
-Quadrilateral quads[10];
+City simCity;
 
 void readColors(char fileName[50]){
     inFile.open(fileName);
@@ -59,9 +71,7 @@ void readColors(char fileName[50]){
     inFile.close();
 }
 
-void readObjects(char fileName[50]){
-    Quadrilateral obj;
-
+void readCity(char fileName[50]){
     inFile.open(fileName);
     if(!inFile){
         cout << "Não consegui abrir o arquivo " << fileName << endl;
@@ -70,20 +80,14 @@ void readObjects(char fileName[50]){
         cout << "Arquivo "<< fileName <<" aberto" << endl;
     }
 
-    inFile >> obj.largura >> obj.altura >> obj.profundidade;
-    inFile >> obj.color;
+    inFile >> simCity.width >> simCity.depth;
 
-    obj.posX = (rand() % MAX_X) + obj.largura/2;
-    obj.posZ = (rand() % MAX_Z) + obj.profundidade/2;
-    cout << "Coordenadas: X = " << obj.posX  << ", Y = " << obj.posZ << endl;
-
-    quads[NUM_OBJS++] = obj;
+    for(int i = 0; i < simCity.width; i++){
+        for(int j = 0; j < simCity.depth; j++){
+            inFile >> simCity.form[i][j];
+        }
+    }
     inFile.close();
-
-    //cout << cubo01.largura << "|" << cubo01.altura << "|" << cubo01.profundidade << endl;
-    //cout << cubo01.color << endl;
-    //cout << colors[quads[0].color-1][0] << "|" << colors[quads[0].color-1][1] << "|" << colors[quads[0].color-1][2] << endl;
-    //cout << *colors << endl;
 }
 
 void DefineLuz(void){
@@ -146,57 +150,6 @@ void DefineLuz(void){
 
 }
 
-void init(void){
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-
-	glShadeModel(GL_SMOOTH);
-	glColorMaterial (GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
-	glEnable(GL_DEPTH_TEST);
-	glEnable (GL_CULL_FACE);
-
-    // Obtem o tempo inicial
-    #ifdef WIN32
-        last_idle_time = GetTickCount();
-    #else
-        gettimeofday (&last_idle_time, NULL);
-    #endif
-
-    readColors("objects/colors.txt");
-    readObjects("objects/modelo01.txt");
-    readObjects("objects/modelo02.txt");
-}
-
-void PosicUser(){
-	// Set the clipping volume
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluPerspective(90,AspectRatio,0.01,200);
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	gluLookAt(0, 0, 0,
-		      0,0,-8,
-			  0.0f,1.0f,0.0f);
-}
-
-void reshape( int w, int h ){
-
-	// Prevent a divide by zero, when window is too short
-	// (you cant make a window of zero width).
-	if(h == 0)
-		h = 1;
-
-	AspectRatio = 1.0f * w / h;
-	// Reset the coordinate system before modifying
-	glMatrixMode(GL_PROJECTION);
-	//glLoadIdentity();
-	// Set the viewport to be the entire window
-    glViewport(0, 0, w, h);
-
-	PosicUser();
-
-}
-
 void DrawObject(float x, float y, float z){
 	glBegin ( GL_QUADS );
         // Front Face
@@ -238,19 +191,50 @@ void DrawObject(float x, float y, float z){
 	glEnd();
 }
 
-void DisplayObjects(){
-    for(int i = 0; i < NUM_OBJS; i++){
-        Quadrilateral object = quads[i];
-        int color = object.color;
-        float x = object.posX;
-        float z = object.posZ;
+void DrawCity(City c){
 
-        glPushMatrix();
-            glTranslatef(x, 0.0f, -z);
-            glColor3f(colors[color-1][0],colors[color-1][1],colors[color-1][2]);
-            DrawObject(object.largura, object.altura, object.profundidade);
-        glPopMatrix();
+    for(int i = 0; i < c.width; i++){
+        for(int j = 0; j < c.depth; j++){
+            int objHeight = c.form[i][j];
+
+            glPushMatrix();
+                glColor3f(255.0, 0.0, 0.0);
+                glTranslatef((float)(i + 10), (float)(objHeight/2) ,(float)(j + 10));
+                DrawObject(OBJ_WIDTH, c.form[i][j], OBJ_DEPTH);
+            glPopMatrix();
+        }
     }
+}
+
+void PosicUser(){
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective(90,AspectRatio,0.01,200);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	gluLookAt(userX, userY, userZ,
+		      lookX, lookY, lookZ,
+			  0.0f,1.0f,0.0f);
+}
+
+void reshape( int w, int h ){
+
+	// Prevent a divide by zero, when window is too short
+	// (you cant make a window of zero width).
+	if(h == 0)
+		h = 1;
+
+	AspectRatio = 1.0f * w / h;
+	// Reset the coordinate system before modifying
+	glMatrixMode(GL_PROJECTION);
+	//glLoadIdentity();
+	// Set the viewport to be the entire window
+    glViewport(0, 0, w, h);
+
+	PosicUser();
+
 }
 
 void display( void ){
@@ -263,7 +247,7 @@ void display( void ){
 
 	glMatrixMode(GL_MODELVIEW);
 
-	DisplayObjects();
+	DrawCity(simCity);
 
 	glutSwapBuffers();
 }
@@ -277,39 +261,39 @@ void animate(){
     time_now = GetTickCount();
     dt = (float) (time_now - last_idle_time) / 1000.0;
 #else
-    // Figure out time elapsed since last call to idle function
     struct timeval time_now;
     gettimeofday(&time_now, NULL);
     dt = (float)(time_now.tv_sec  - last_idle_time.tv_sec) +
     1.0e-6*(time_now.tv_usec - last_idle_time.tv_usec);
 #endif
     AccumTime +=dt;
-    if (AccumTime >=3) // imprime o FPS a cada 3 segundos
+    if (AccumTime >=3)
     {
         cout << 1.0/dt << " FPS"<< endl;
         AccumTime = 0;
     }
-    //cout << "AccumTime: " << AccumTime << endl;
-    // Anima cubos
-    //AngY++;
-    // Sa;va o tempo para o pr—ximo ciclo de rendering
+
     last_idle_time = time_now;
 
-        //if  (GetAsyncKeyState(32) & 0x8000) != 0)
-          //  cout << "Espaco Pressionado" << endl;
-
-    // Redesenha
     glutPostRedisplay();
 }
 
 void keyboard ( unsigned char key, int x, int y ){
 	switch ( key )
 	{
-    case 27:        // Termina o programa qdo
-      exit ( 0 );   // a tecla ESC for pressionada
-      break;
+    case 27:
+        exit(0);
+        break;
+    case ' ':
+        userY -= JUMP;
+        glutPostRedisplay();
+        break;
+    case 'b':
+        userY += JUMP;
+        glutPostRedisplay();
+        break;
     default:
-            cout << key;
+        cout << key;
       break;
   }
 }
@@ -317,34 +301,67 @@ void keyboard ( unsigned char key, int x, int y ){
 void arrow_keys ( int a_keys, int x, int y ){
 	switch ( a_keys )
 	{
-		case GLUT_KEY_UP:       // When Up Arrow Is Pressed...
-			glutFullScreen ( ); // Go Into Full Screen Mode
-			break;
-	    case GLUT_KEY_DOWN:     // When Down Arrow Is Pressed...
-			glutInitWindowSize  ( 700, 500 );
-			break;
+		case GLUT_KEY_UP:
+			userZ -= JUMP;
+            lookZ -= JUMP;
+            glutPostRedisplay();
+            break;
+	    case GLUT_KEY_DOWN:
+			userZ += JUMP;
+            lookZ += JUMP;
+            glutPostRedisplay();
+            break;
+        case GLUT_KEY_RIGHT:
+            userX += JUMP;
+            lookX += JUMP;
+            glutPostRedisplay();
+            break;
+        case GLUT_KEY_LEFT:
+            userX -= JUMP;
+            lookX -= JUMP;
+            glutPostRedisplay();
+            break;
 		default:
 			break;
 	}
 }
 
-int main ( int argc, char** argv ){
+void init(void){
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+	glShadeModel(GL_SMOOTH);
+	glColorMaterial (GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+	glEnable(GL_DEPTH_TEST);
+	glEnable (GL_CULL_FACE);
+
+    // Obtem o tempo inicial
+    #ifdef WIN32
+        last_idle_time = GetTickCount();
+    #else
+        gettimeofday (&last_idle_time, NULL);
+    #endif
+
+    readColors("objects/colors.txt");
+    readCity("objects/city01.txt");
+}
+
+int main(int argc, char** argv){
 	glutInit            ( &argc, argv );
-	glutInitDisplayMode (GLUT_DOUBLE | GLUT_DEPTH | GLUT_RGB );// | GLUT_STEREO);// | GLUT_DOUBLE | GLUT_RGBA );
-	//glutInitDisplayMode (GLUT_RGB | GLUT_DEPTH | GLUT_STEREO);// | GLUT_DOUBLE | GLUT_RGBA );
+	glutInitDisplayMode (GLUT_DOUBLE | GLUT_DEPTH | GLUT_RGB );
 
 	glutInitWindowPosition (0,0);
-	glutInitWindowSize  ( 700, 500 );
-	glutCreateWindow    ("SimCity");
+	glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+	glutCreateWindow("SimCity");
 
 	init ();
 
-	glutDisplayFunc ( display );
-	glutReshapeFunc ( reshape );
-	glutKeyboardFunc ( keyboard );
-	glutSpecialFunc ( arrow_keys );
-	glutIdleFunc ( animate );
+	glutDisplayFunc(display);
+	glutReshapeFunc(reshape);
+	glutKeyboardFunc(keyboard);
+	glutSpecialFunc(arrow_keys);
+	glutIdleFunc(animate);
 
-	glutMainLoop ( );
+	glutMainLoop();
+
 	return 0;
 }
