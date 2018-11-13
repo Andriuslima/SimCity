@@ -35,12 +35,12 @@ int NUM_COLORS;
 int colors[10][3];
 
 int JUMP = 1;
-float userX = 0;
-float userY = 0;
-float userZ = 0;
-float lookX = 0;
-float lookY = 0;
-float lookZ = -8;
+float userX = 1;
+float userY = 11;
+float userZ = 28;
+float lookX = 9;
+float lookY = 6;
+float lookZ = 20;
 
 int CITY_MAXWIDTH = 100;
 int CITY_MAXDEPTH = 100;
@@ -57,6 +57,11 @@ typedef struct{
 }City;
 
 City simCity;
+
+void printPosition(){
+    cout << "User position: " << userX << " | " << userY << " | " << userZ << endl;
+    cout << "Looking at: " << lookX << " | " << lookY << " | " << lookZ << endl;
+}
 
 void readColors(char fileName[50]){
     inFile.open(fileName);
@@ -214,8 +219,12 @@ void DrawCity(City c){
                 }
 
                 glPushMatrix();
-                    glTranslatef((float)(-i*(2*OBJ_WIDTH) + 3), objHeight,(float)(-j*(2*OBJ_DEPTH) + 3));
-                    DrawObject(OBJ_WIDTH, objHeight, OBJ_DEPTH);
+                    //glTranslatef((float)(-i*(2*OBJ_WIDTH) + 3), objHeight,(float)(-j*(2*OBJ_DEPTH) + 3));
+                    glTranslatef(-i, objHeight/2.0, -j);
+                    glScalef(1, objHeight, 1);
+                    //glTranslatef(0, -objHeight/2, 0);
+                    //DrawObject(OBJ_WIDTH, objHeight, OBJ_DEPTH);
+                    DrawObject(0.5, 0.5,0.5);
                 glPopMatrix();
             }
         }
@@ -347,6 +356,9 @@ void keyboard ( unsigned char key, int x, int y ){
         lookY -= JUMP;
         userY -= JUMP;
         glutPostRedisplay();
+        break;
+    case 'p':
+        printPosition();
         break;
     default:
         cout << key;
