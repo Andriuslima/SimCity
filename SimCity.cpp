@@ -35,12 +35,14 @@ int NUM_COLORS;
 int colors[10][3];
 
 int JUMP = 1;
-float userX = -99;
-float userY = 17;
-float userZ = 0;
-float lookX = -91;
-float lookY = 11;
-float lookZ = -8;
+float userX = -96;
+float userY = 12;
+float userZ = -3;
+float lookX = -87;
+float lookY = 8;
+float lookZ = -11;
+
+float USER_RADIUS = 10.0;
 
 int CITY_MAXWIDTH = 100;
 int CITY_MAXDEPTH = 100;
@@ -48,7 +50,8 @@ int CITY_MAXDEPTH = 100;
 int OBJ_WIDTH = 5;
 int OBJ_DEPTH = 5;
 
-int CULLING_BACKFACE = 1;
+int CULLING_BACKFACE = 0;
+int CULLING_INTERSECTION = 1;
 
 ifstream inFile;
 int x;
@@ -72,7 +75,7 @@ void printPosition(){
 void readColors(char fileName[50]){
     inFile.open(fileName);
     if(!inFile){
-        cout << "Não consegui abrir o arquivo " << fileName << endl;
+        cout << "NÃ£o consegui abrir o arquivo " << fileName << endl;
         exit(1);
     }else{
         cout << "Arquivo "<< fileName <<" aberto" << endl;
@@ -94,7 +97,7 @@ void readColors(char fileName[50]){
 void readCity(char fileName[50]){
     inFile.open(fileName);
     if(!inFile){
-        cout << "Não consegui abrir o arquivo " << fileName << endl;
+        cout << "NÃ£o consegui abrir o arquivo " << fileName << endl;
         exit(1);
     }else{
         cout << "Arquivo "<< fileName <<" aberto" << endl;
@@ -121,20 +124,21 @@ void DefineLuz(void){
   GLfloat LuzAmbiente[]   = {0.24725f, 0.1995f, 0.07f } ;
   GLfloat LuzDifusa[]   = {0.75164f, 0.60648f, 0.22648f, 1.0f };
   GLfloat LuzEspecular[] = {0.626281f, 0.555802f, 0.366065f, 1.0f };
-  GLfloat PosicaoLuz0[]  = {3.0f, 3.0f, 0.0f, 1.0f };
+  GLfloat PosicaoLuz0[]  = {0.0f, 100.0f, 0.0f, 1.0f };
   GLfloat PosicaoLuz1[]  = {-3.0f, -3.0f, 0.0f, 1.0f };
   GLfloat Especularidade[] = {1.0f, 1.0f, 1.0f, 1.0f };
 
-  // ****************  Fonte de Luz 0
-  glEnable(GL_COLOR_MATERIAL);
+   // ****************  Fonte de Luz 0
 
-  // Habilita o uso de iluminação
+	glEnable ( GL_COLOR_MATERIAL );
+
+
+   // Habilita o uso de iluminaï¿½ï¿½o
   glEnable(GL_LIGHTING);
 
   // Ativa o uso da luz ambiente
   glLightModelfv(GL_LIGHT_MODEL_AMBIENT, LuzAmbiente);
-
-  // Define os parametros da Luz número Zero
+  // Define os parametros da Luz nï¿½mero Zero
   glLightfv(GL_LIGHT0, GL_AMBIENT, LuzAmbiente);
   glLightfv(GL_LIGHT0, GL_DIFFUSE, LuzDifusa  );
   glLightfv(GL_LIGHT0, GL_SPECULAR, LuzEspecular  );
@@ -147,16 +151,16 @@ void DefineLuz(void){
   // Define a reflectancia do material
   glMaterialfv(GL_FRONT,GL_SPECULAR, Especularidade);
 
-  // Define a concentração do brilho.
+  // Define a concentraï¿½ï¿½o do brilho.
   // Quanto maior o valor do Segundo parametro, mais
-  // concentrado será o brilho. (Valores válidos: de 0 a 128)
+  // concentrado serï¿½ o brilho. (Valores vï¿½lidos: de 0 a 128)
   glMateriali(GL_FRONT,GL_SHININESS,51);
 
   // ****************  Fonte de Luz 1
 
   // Ativa o uso da luz ambiente
   glLightModelfv(GL_LIGHT_MODEL_AMBIENT, LuzAmbiente);
-  // Define os parametros da Luz número Zero
+  // Define os parametros da Luz nï¿½mero Zero
   glLightfv(GL_LIGHT1, GL_AMBIENT, LuzAmbiente);
   glLightfv(GL_LIGHT1, GL_DIFFUSE, LuzDifusa  );
   glLightfv(GL_LIGHT1, GL_SPECULAR, LuzEspecular  );
@@ -169,11 +173,32 @@ void DefineLuz(void){
   // Define a reflectancia do material
   glMaterialfv(GL_FRONT,GL_SPECULAR, Especularidade);
 
-  // Define a concentração do brilho.
+  // Define a concentraï¿½ï¿½o do brilho.
   // Quanto maior o valor do Segundo parametro, mais
-  // concentrado será o brilho. (Valores válidos: de 0 a 128)
+  // concentrado serï¿½ o brilho. (Valores vï¿½lidos: de 0 a 128)
   glMateriali(GL_FRONT,GL_SHININESS,20);
 
+}
+
+float distance(float x1, float y1, float z1, float x2, float y2, float z2){
+    return sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2) + pow(z2 - z1, 2));
+}
+
+bool calculateIntersection(VOP cubePos){
+    //r1 = raio do cubo
+    float cube_radius = 1;
+    float r1 = distance(cubePos.x, cubePos.y, cubePos.z, cubePos.x + cube_radius, cubePos.y + cube_radius, cubePos.z + cube_radius);
+
+    //r2 = raio do user
+    float r2 = distance(userX, userY, userZ, userX + USER_RADIUS, userY + USER_RADIUS, userZ + USER_RADIUS);
+
+    // distancia do centro do cubo atÃ© o user
+    float d1 = distance(cubePos.x, cubePos.y, cubePos.z, userX, userY, userZ);
+
+    // Soma dos raios
+    float d2 = r1 + r2;
+
+    return d1 <= d2;
 }
 
 float dotProduct(VOP p1, VOP p2){
@@ -183,7 +208,7 @@ float dotProduct(VOP p1, VOP p2){
     return x + y + z;
 }
 
-void DrawObject(float x, float y, float z, VOP Position){
+void DrawObjectBackFaceCulling(float x, float y, float z, VOP Position){
     VOP N;
     VOP P;
     VOP V;
@@ -329,6 +354,47 @@ void DrawObject(float x, float y, float z, VOP Position){
 	glEnd();
 }
 
+void DrawObject(float x, float y, float z){
+	glBegin ( GL_QUADS );
+        // Front Face
+        glNormal3f(0,0,1);
+        glVertex3f(-1.0f*x, -1.0f*y,  1.0f*z);
+        glVertex3f( 1.0f*x, -1.0f*y,  1.0f*z);
+        glVertex3f( 1.0f*x,  1.0f*y,  1.0f*z);
+        glVertex3f(-1.0f*x,  1.0f*y,  1.0f*z);
+        // Back Face
+        glNormal3f(0,0,-1);
+        glVertex3f(-1.0f*x, -1.0f*y, -1.0f*z);
+        glVertex3f(-1.0f*x,  1.0f*y, -1.0f*z);
+        glVertex3f( 1.0f*x,  1.0f*y, -1.0f*z);
+        glVertex3f( 1.0f*x, -1.0f*y, -1.0f*z);
+        // Top Face
+        glNormal3f(0,1,0);
+        glVertex3f(-1.0f*x,  1.0f*y, -1.0f*z);
+        glVertex3f(-1.0f*x,  1.0f*y,  1.0f*z);
+        glVertex3f( 1.0f*x,  1.0f*y,  1.0f*z);
+        glVertex3f( 1.0f*x,  1.0f*y, -1.0f*z);
+        // Bottom Face
+        glNormal3f(0,-1,0);
+        glVertex3f(-1.0f*x, -1.0f*y, -1.0f*z);
+        glVertex3f( 1.0f*x, -1.0f*y, -1.0f*z);
+        glVertex3f( 1.0f*x, -1.0f*y,  1.0f*z);
+        glVertex3f(-1.0f*x, -1.0f*y,  1.0f*z);
+        // Right face
+        glNormal3f(1,0,0);
+        glVertex3f( 1.0f*x, -1.0f*y, -1.0f*z);
+        glVertex3f( 1.0f*x,  1.0f*y, -1.0f*z);
+        glVertex3f( 1.0f*x,  1.0f*y,  1.0f*z);
+        glVertex3f( 1.0f*x, -1.0f*y,  1.0f*z);
+        // Left Face
+        glNormal3f(-1,0,0);
+        glVertex3f(-1.0f*x, -1.0f*y, -1.0f*z);
+        glVertex3f(-1.0f*x, -1.0f*y,  1.0f*z);
+        glVertex3f(-1.0f*x,  1.0f*y,  1.0f*z);
+        glVertex3f(-1.0f*x,  1.0f*y, -1.0f*z);
+	glEnd();
+}
+
 void DrawCity(City c){
 
     for(int i = 0; i < c.width; i++){
@@ -346,10 +412,20 @@ void DrawCity(City c){
                 Position.x = -i;
                 Position.y = objHeight/2.0;
                 Position.z = -j;
+
                 glPushMatrix();
                     glTranslatef(Position.x, Position.y, Position.z);
                     glScalef(1, objHeight, 1);
-                    DrawObject(0.5, 0.5, 0.5, Position);
+                    if(CULLING_BACKFACE){
+                        DrawObjectBackFaceCulling(0.5, 0.5, 0.5, Position);
+                    } else if(CULLING_INTERSECTION){
+                        if(calculateIntersection(Position)){
+                            DrawObject(0.5, 0.5, 0.5);
+                        }
+
+                    } else {
+                        DrawObject(0.5, 0.5, 0.5);
+                    }
                 glPopMatrix();
             }
         }
@@ -429,44 +505,51 @@ void animate(){
 }
 
 void keyboard ( unsigned char key, int x, int y ){
-	switch ( key )
-	{
-    case 27:
-        exit(0);
-        break;
-    case 'd':
-        lookX += JUMP;
-        glutPostRedisplay();
-        break;
-    case 'a':
-        lookX -= JUMP;
-        glutPostRedisplay();
-        break;
-    case 's':
-        lookY -= JUMP;
-        glutPostRedisplay();
-        break;
-    case 'w':
-        lookY += JUMP;
-        glutPostRedisplay();
-        break;
-    case '8':
-        lookY += JUMP;
-        userY += JUMP;
-        glutPostRedisplay();
-        break;
-    case '2':
-        lookY -= JUMP;
-        userY -= JUMP;
-        glutPostRedisplay();
-        break;
-    case 'p':
-        printPosition();
-        break;
-    default:
-        cout << key;
-      break;
-  }
+	switch ( key ){
+        case 27:
+            exit(0);
+            break;
+        case 'd':
+            lookX += JUMP;
+            glutPostRedisplay();
+            break;
+        case 'a':
+            lookX -= JUMP;
+            glutPostRedisplay();
+            break;
+        case 's':
+            lookY -= JUMP;
+            glutPostRedisplay();
+            break;
+        case 'w':
+            lookY += JUMP;
+            glutPostRedisplay();
+            break;
+        case '8':
+            lookY += JUMP;
+            userY += JUMP;
+            glutPostRedisplay();
+            break;
+        case '2':
+            lookY -= JUMP;
+            userY -= JUMP;
+            glutPostRedisplay();
+            break;
+        case 'p':
+            printPosition();
+            break;
+        case '+':
+            USER_RADIUS += 1;
+            glutPostRedisplay();
+            break;
+        case '-':
+            USER_RADIUS -= 1;
+            glutPostRedisplay();
+            break;
+        default:
+            cout << key;
+          break;
+      }
 }
 
 void arrow_keys ( int a_keys, int x, int y ){
