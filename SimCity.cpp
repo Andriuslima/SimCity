@@ -35,12 +35,12 @@ int NUM_COLORS;
 int colors[10][3];
 
 int JUMP = 1;
-float userX = 1;
-float userY = 11;
-float userZ = 28;
-float lookX = 9;
-float lookY = 6;
-float lookZ = 20;
+float userX = -99;
+float userY = 17;
+float userZ = 0;
+float lookX = -91;
+float lookY = 11;
+float lookZ = -8;
 
 int CITY_MAXWIDTH = 100;
 int CITY_MAXDEPTH = 100;
@@ -48,12 +48,18 @@ int CITY_MAXDEPTH = 100;
 int OBJ_WIDTH = 5;
 int OBJ_DEPTH = 5;
 
+int CULLING_BACKFACE = 1;
+
 ifstream inFile;
 int x;
 
 typedef struct{
+    float x, y, z;
+}VOP;
+
+typedef struct{
     int width, depth;
-    int form[100][100];
+    int form[500][500];
 }City;
 
 City simCity;
@@ -94,14 +100,20 @@ void readCity(char fileName[50]){
         cout << "Arquivo "<< fileName <<" aberto" << endl;
     }
 
-    inFile >> simCity.width >> simCity.depth;
+
+    inFile >> simCity.depth >> simCity.width;
 
     for(int i = 0; i < simCity.width; i++){
         for(int j = 0; j < simCity.depth; j++){
             inFile >> simCity.form[i][j];
         }
     }
+
     inFile.close();
+
+    cout << "City: " << endl;
+    cout << simCity.depth << endl;
+    cout << simCity.width << endl;
 }
 
 void DefineLuz(void){
@@ -164,44 +176,156 @@ void DefineLuz(void){
 
 }
 
-void DrawObject(float x, float y, float z){
-	glBegin ( GL_QUADS );
+float dotProduct(VOP p1, VOP p2){
+    float x = p1.x * p2.x;
+    float y = p1.y * p2.y;
+    float z = p1.z * p2.z;
+    return x + y + z;
+}
+
+void DrawObject(float x, float y, float z, VOP Position){
+    VOP N;
+    VOP P;
+    VOP V;
+
+	glBegin(GL_QUADS);
         // Front Face
-        glNormal3f(0,0,1);
-        glVertex3f(-1.0f*x, -1.0f*y,  1.0f*z);
-        glVertex3f( 1.0f*x, -1.0f*y,  1.0f*z);
-        glVertex3f( 1.0f*x,  1.0f*y,  1.0f*z);
-        glVertex3f(-1.0f*x,  1.0f*y,  1.0f*z);
+        N.x = 0;
+        N.y = 0;
+        N.z = 1;
+
+        P.x = Position.x;
+        P.y = Position.y;
+        P.z = Position.z + z/2;
+
+        V.x = (userX - P.x);
+        V.y = (userY - P.y);
+        V.z = (userZ - P.z);
+
+        float frontAngle = dotProduct(N, V);
+
+        if(frontAngle > 0){
+            glNormal3f(0,0,1);
+            glVertex3f(-1.0f*x, -1.0f*y,  1.0f*z);
+            glVertex3f( 1.0f*x, -1.0f*y,  1.0f*z);
+            glVertex3f( 1.0f*x,  1.0f*y,  1.0f*z);
+            glVertex3f(-1.0f*x,  1.0f*y,  1.0f*z);
+        }
+
         // Back Face
-        glNormal3f(0,0,-1);
-        glVertex3f(-1.0f*x, -1.0f*y, -1.0f*z);
-        glVertex3f(-1.0f*x,  1.0f*y, -1.0f*z);
-        glVertex3f( 1.0f*x,  1.0f*y, -1.0f*z);
-        glVertex3f( 1.0f*x, -1.0f*y, -1.0f*z);
+        N.x = 0;
+        N.y = 0;
+        N.z = -1;
+
+        P.x = Position.x;
+        P.y = Position.y;
+        P.z = Position.z - z/2;
+
+        V.x = (userX - P.x);
+        V.y = (userY - P.y);
+        V.z = (userZ - P.z);
+
+        float backAngle = dotProduct(N, V);
+
+        if(backAngle > 0){
+            glNormal3f(0,0,-1);
+            glVertex3f(-1.0f*x, -1.0f*y, -1.0f*z);
+            glVertex3f(-1.0f*x,  1.0f*y, -1.0f*z);
+            glVertex3f( 1.0f*x,  1.0f*y, -1.0f*z);
+            glVertex3f( 1.0f*x, -1.0f*y, -1.0f*z);
+        }
+
         // Top Face
-        glNormal3f(0,1,0);
-        glVertex3f(-1.0f*x,  1.0f*y, -1.0f*z);
-        glVertex3f(-1.0f*x,  1.0f*y,  1.0f*z);
-        glVertex3f( 1.0f*x,  1.0f*y,  1.0f*z);
-        glVertex3f( 1.0f*x,  1.0f*y, -1.0f*z);
+        N.x = 0;
+        N.y = 1;
+        N.z = 0;
+
+        P.x = Position.x;
+        P.y = Position.y + y/2;
+        P.z = Position.z;
+
+        V.x = (userX - P.x);
+        V.y = (userY - P.y);
+        V.z = (userZ - P.z);
+
+        float topAngle = dotProduct(N, V);
+
+        if(topAngle > 0){
+            glNormal3f(0,1,0);
+            glVertex3f(-1.0f*x,  1.0f*y, -1.0f*z);
+            glVertex3f(-1.0f*x,  1.0f*y,  1.0f*z);
+            glVertex3f( 1.0f*x,  1.0f*y,  1.0f*z);
+            glVertex3f( 1.0f*x,  1.0f*y, -1.0f*z);
+        }
+
         // Bottom Face
-        glNormal3f(0,-1,0);
-        glVertex3f(-1.0f*x, -1.0f*y, -1.0f*z);
-        glVertex3f( 1.0f*x, -1.0f*y, -1.0f*z);
-        glVertex3f( 1.0f*x, -1.0f*y,  1.0f*z);
-        glVertex3f(-1.0f*x, -1.0f*y,  1.0f*z);
+        N.x = 0;
+        N.y = -1;
+        N.z = 0;
+
+        P.x = Position.x;
+        P.y = Position.y - y/2;
+        P.z = Position.z;
+
+        V.x = (userX - P.x);
+        V.y = (userY - P.y);
+        V.z = (userZ - P.z);
+
+        float bottomAngle = dotProduct(N, V);
+
+        if(bottomAngle > 0){
+            glNormal3f(0,-1,0);
+            glVertex3f(-1.0f*x, -1.0f*y, -1.0f*z);
+            glVertex3f( 1.0f*x, -1.0f*y, -1.0f*z);
+            glVertex3f( 1.0f*x, -1.0f*y,  1.0f*z);
+            glVertex3f(-1.0f*x, -1.0f*y,  1.0f*z);
+        }
+
+
         // Right face
-        glNormal3f(1,0,0);
-        glVertex3f( 1.0f*x, -1.0f*y, -1.0f*z);
-        glVertex3f( 1.0f*x,  1.0f*y, -1.0f*z);
-        glVertex3f( 1.0f*x,  1.0f*y,  1.0f*z);
-        glVertex3f( 1.0f*x, -1.0f*y,  1.0f*z);
+        N.x = 1;
+        N.y = 0;
+        N.z = 0;
+
+        P.x = Position.x + x/2;
+        P.y = Position.y;
+        P.z = Position.z;
+
+        V.x = (userX - P.x);
+        V.y = (userY - P.y);
+        V.z = (userZ - P.z);
+
+        float rightAngle = dotProduct(N, V);
+
+        if(rightAngle > 0){
+            glNormal3f(1,0,0);
+            glVertex3f( 1.0f*x, -1.0f*y, -1.0f*z);
+            glVertex3f( 1.0f*x,  1.0f*y, -1.0f*z);
+            glVertex3f( 1.0f*x,  1.0f*y,  1.0f*z);
+            glVertex3f( 1.0f*x, -1.0f*y,  1.0f*z);
+        }
+
         // Left Face
-        glNormal3f(-1,0,0);
-        glVertex3f(-1.0f*x, -1.0f*y, -1.0f*z);
-        glVertex3f(-1.0f*x, -1.0f*y,  1.0f*z);
-        glVertex3f(-1.0f*x,  1.0f*y,  1.0f*z);
-        glVertex3f(-1.0f*x,  1.0f*y, -1.0f*z);
+        N.x = -1;
+        N.y = 0;
+        N.z = 0;
+
+        P.x = Position.x - x/2;
+        P.y = Position.y;
+        P.z = Position.z;
+
+        V.x = (userX - P.x);
+        V.y = (userY - P.y);
+        V.z = (userZ - P.z);
+
+        float leftAngle = dotProduct(N, V);
+        if(leftAngle > 0){
+            glNormal3f(-1,0,0);
+            glVertex3f(-1.0f*x, -1.0f*y, -1.0f*z);
+            glVertex3f(-1.0f*x, -1.0f*y,  1.0f*z);
+            glVertex3f(-1.0f*x,  1.0f*y,  1.0f*z);
+            glVertex3f(-1.0f*x,  1.0f*y, -1.0f*z);
+        }
 	glEnd();
 }
 
@@ -218,13 +342,14 @@ void DrawCity(City c){
                     glColor3f(0.0, 0.0, 255.0);
                 }
 
+                VOP Position;
+                Position.x = -i;
+                Position.y = objHeight/2.0;
+                Position.z = -j;
                 glPushMatrix();
-                    //glTranslatef((float)(-i*(2*OBJ_WIDTH) + 3), objHeight,(float)(-j*(2*OBJ_DEPTH) + 3));
-                    glTranslatef(-i, objHeight/2.0, -j);
+                    glTranslatef(Position.x, Position.y, Position.z);
                     glScalef(1, objHeight, 1);
-                    //glTranslatef(0, -objHeight/2, 0);
-                    //DrawObject(OBJ_WIDTH, objHeight, OBJ_DEPTH);
-                    DrawObject(0.5, 0.5,0.5);
+                    DrawObject(0.5, 0.5, 0.5, Position);
                 glPopMatrix();
             }
         }
@@ -273,28 +398,6 @@ void display( void ){
 	glMatrixMode(GL_MODELVIEW);
 
 	DrawCity(simCity);
-
-	//int objHeight;
-	//glPushMatrix();
-    //    objHeight = 10;
-    //    glColor3f(0.0, 0.0, 255.0);
-    //    glTranslatef(0*OBJ_WIDTH, (float)(objHeight), 0*(2*OBJ_DEPTH));
-    //    DrawObject(OBJ_WIDTH, objHeight, OBJ_DEPTH);
-    //glPopMatrix();
-
-	//glPushMatrix();
-    //   objHeight = 20;
-    //    glColor3f(0.0, 255.0, 0.0);
-    //    glTranslatef(0*OBJ_WIDTH, (float)(objHeight), 1*(2*OBJ_DEPTH));
-    //    DrawObject(OBJ_WIDTH, objHeight, OBJ_DEPTH);
-    //glPopMatrix();
-
-    //glPushMatrix();
-    //    objHeight = 30;
-    //    glColor3f(255.0, 0.0, 0.0);
-    //    glTranslatef(0*OBJ_WIDTH, (float)(objHeight), 2*(2*OBJ_DEPTH));
-    //   DrawObject(OBJ_WIDTH, objHeight, OBJ_DEPTH);
-    //glPopMatrix();
 
 	glutSwapBuffers();
 }
@@ -410,7 +513,7 @@ void init(void){
     #endif
 
     readColors("objects/colors.txt");
-    readCity("objects/city01.txt");
+    readCity("objects/city100x100.txt");
 }
 
 int main(int argc, char** argv){
