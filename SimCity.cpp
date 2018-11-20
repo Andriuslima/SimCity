@@ -35,6 +35,8 @@ int NUM_COLORS;
 int colors[10][3];
 
 int JUMP = 1;
+int DIVISION_SPACE = 30;
+
 float userX = -50;
 float userY = 2;
 float userZ = -70;
@@ -50,8 +52,9 @@ int CITY_MAXDEPTH = 100;
 int OBJ_WIDTH = 5;
 int OBJ_DEPTH = 5;
 
-int CULLING_BACKFACE = 1;
+int CULLING_BACKFACE = 0;
 int CULLING_INTERSECTION = 0;
+int CULLING_SUBDIVISION = 1;
 
 ifstream inFile;
 int x;
@@ -395,6 +398,33 @@ void DrawObject(float x, float y, float z){
 	glEnd();
 }
 
+void DrawCitySubDivision(City c){
+    for(int i = abs(userX)-DIVISION_SPACE; i < abs(userX)+DIVISION_SPACE; i++){
+        for(int j = abs(userZ)-DIVISION_SPACE; j < abs(userZ)+DIVISION_SPACE; j++){
+            int objHeight = c.form[i][j];
+
+            if( objHeight > 0){
+                if(j%2 == 0){
+                    glColor3f(255.0, 0.0, 0.0);
+                } else {
+                    glColor3f(0.0, 0.0, 255.0);
+                }
+
+                VOP Position;
+                Position.x = -i;
+                Position.y = objHeight/2.0;
+                Position.z = -j;
+
+                glPushMatrix();
+                    glTranslatef(Position.x, Position.y, Position.z);
+                    glScalef(1, objHeight, 1);
+                    DrawObject(0.5, 0.5, 0.5);
+                glPopMatrix();
+            }
+        }
+    }
+}
+
 void DrawCity(City c){
 
     for(int i = 0; i < c.width; i++){
@@ -473,7 +503,11 @@ void display( void ){
 
 	glMatrixMode(GL_MODELVIEW);
 
-	DrawCity(simCity);
+    if(CULLING_SUBDIVISION){
+        DrawCitySubDivision(simCity);
+    } else {
+        DrawCity(simCity);
+    }
 
 	glutSwapBuffers();
 }
