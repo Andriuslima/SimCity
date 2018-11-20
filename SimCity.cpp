@@ -35,14 +35,14 @@ int NUM_COLORS;
 int colors[10][3];
 
 int JUMP = 1;
-float userX = -96;
-float userY = 12;
-float userZ = -3;
-float lookX = -87;
-float lookY = 8;
-float lookZ = -11;
+float userX = -50;
+float userY = 2;
+float userZ = -70;
+float lookX = -40;
+float lookY = 2;
+float lookZ = -178;
 
-float USER_RADIUS = 10.0;
+float USER_RADIUS = 20.0;
 
 int CITY_MAXWIDTH = 100;
 int CITY_MAXDEPTH = 100;
@@ -50,8 +50,8 @@ int CITY_MAXDEPTH = 100;
 int OBJ_WIDTH = 5;
 int OBJ_DEPTH = 5;
 
-int CULLING_BACKFACE = 0;
-int CULLING_INTERSECTION = 1;
+int CULLING_BACKFACE = 1;
+int CULLING_INTERSECTION = 0;
 
 ifstream inFile;
 int x;
@@ -586,7 +586,7 @@ void init(void){
 	glShadeModel(GL_SMOOTH);
 	glColorMaterial (GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
 	glEnable(GL_DEPTH_TEST);
-	glEnable (GL_CULL_FACE);
+	//glEnable (GL_CULL_FACE);
 
     // Obtem o tempo inicial
     #ifdef WIN32
@@ -596,7 +596,7 @@ void init(void){
     #endif
 
     readColors("objects/colors.txt");
-    readCity("objects/city100x100.txt");
+    readCity("objects/city01.txt");
 }
 
 int main(int argc, char** argv){
